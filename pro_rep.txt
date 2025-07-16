@@ -469,3 +469,307 @@ Complementary	Works well alongside detection datasets like SMD
 Conclusion:
 
 The LaRS dataset plays a key role in enabling robust semantic segmentation in maritime surveillance systems. By offering high-quality annotations in real-world aerial scenes, it allows models to learn meaningful class boundaries—especially critical for sea region isolation, which directly supports downstream tasks like object detection using YOLOv5 or DETR. Its simplicity and effectiveness make it an ideal companion to more complex datasets like the Singapore Maritime Dataset (SMD).
+
+WaSR-T: Temporal-Aware Maritime Obstacle Segmentation
+Overview
+
+The WaSR-T model is an advanced deep learning architecture designed specifically for maritime obstacle segmentation, extending the capabilities of the WaSR (Water and Sky Regions) network by introducing a temporal context. Unlike traditional single-frame segmentation methods, WaSR-T uses sequences of consecutive video frames to improve its understanding of the scene, particularly in challenging scenarios involving water reflections and sun glitter.
+
+Maritime environments often present deceptive visual cues due to reflective water surfaces, which make it difficult to distinguish between true obstacles and reflections or lighting artifacts. WaSR-T addresses this by analyzing how pixel patterns evolve over time—enabling it to differentiate moving or static obstacles from dynamic water textures.
+Motivation
+
+The rise of Unmanned Surface Vehicles (USVs) in tasks like port surveillance, environmental monitoring, and autonomous cargo navigation has made robust obstacle detection crucial. While low-power and rich-informational cameras are ideal for these vehicles, models trained for land-based applications (e.g., autonomous cars) often fail in maritime settings.
+
+Traditional models such as WaSR process images independently, which makes them vulnerable to false positives caused by reflections or lighting artifacts. These false alarms lead to unnecessary slowdowns and misinterpretations in autonomous navigation. WaSR-T was developed to reduce these errors by analyzing temporal patterns across multiple frames.
+Key Innovations of WaSR-T
+
+    Temporal Context Module (TCM):
+
+        WaSR-T introduces a Temporal Context Module that processes a short sequence of frames (e.g., 5 preceding frames) to capture how pixel patterns change over time.
+
+        Reflections typically deform over time due to water motion, whereas true obstacles remain relatively stable.
+
+        This insight is leveraged by applying 3D convolutions across stacked feature maps from consecutive frames.
+
+    Shared Encoder Architecture:
+
+        All frames are passed through a shared ResNet-101 encoder, generating spatial feature maps for each.
+
+        These maps are then reduced in dimensionality and fused using the Temporal Context Module before being passed to the decoder.
+
+    Improved Decoder Integration:
+
+        The decoder uses skip connections and multi-scale feature fusion, similar to the original WaSR.
+
+        The fused temporal features are decoded to generate pixel-wise segmentation of the target frame into:
+
+            Water
+
+            Sky
+
+            Obstacle
+
+Dataset and Training
+
+    Base Dataset: MaSTr1325
+
+        Contains 1,325 fully segmented maritime images (with pixel-wise labels for water, sky, and obstacles).
+
+    Extended Dataset: MaSTr1478
+
+        Created for training WaSR-T, it adds 153 challenging frames with their temporal sequences (5 preceding frames each).
+
+        New frames include difficult scenarios like:
+
+            Sun glitter
+
+            Floating object reflections
+
+            Motion blur
+
+        Balanced sampling between standard and challenging conditions ensures model robustness.
+
+Performance Highlights
+
+    On the MODS benchmark, WaSR-T:
+
+        Reduces false positives by 30% compared to WaSR.
+
+        Maintains efficient inference by caching feature maps and only computing new embeddings for incoming frames.
+
+        Shows superior performance especially in the 15-meter critical zone around the USV, which is vital for collision avoidance.
+
+Why WaSR-T is Important for This Project
+
+In this maritime perception project, WaSR-T is used to segment the sea, sky, and obstacles with enhanced reliability. Its temporal awareness allows it to:
+
+    Filter out dynamic water reflections that YOLO or DETR might falsely detect as floating objects.
+
+    Provide a stable and consistent sea mask, which is crucial for post-processing steps like:
+
+        Filtering YOLO detections
+
+        Assigning priority to obstacles in the danger zone
+
+Conclusion
+
+WaSR-T represents a significant leap in maritime perception by bringing temporal intelligence into semantic segmentation. Its ability to reduce false positives from water reflections and glitter, while maintaining real-time processing speed, makes it an ideal fit for autonomous maritime systems and USV-based applications. When combined with object detection models, WaSR-T plays a foundational role in ensuring navigational safety and scene understanding in complex maritime environments.
+
+
+Technologies Used
+
+To successfully implement and evaluate the segmentation and detection models for maritime obstacle recognition, a wide range of development tools, programming frameworks, and supporting technologies were employed. These technologies facilitated efficient model development, training, testing, and result visualization throughout the project lifecycle.
+1. Programming Language
+
+    Python 3.8+
+
+        Used as the primary programming language due to its simplicity, large scientific ecosystem, and excellent support for deep learning and computer vision libraries.
+
+2. Deep Learning Frameworks
+
+    PyTorch
+
+        Core framework used for building and training neural networks such as WaSR-T, YOLOv5, and Detection Transformer (DETR).
+
+        Chosen for its dynamic computation graph, flexibility, and wide adoption in research.
+
+    Torchvision
+
+        Used for standard model architectures, image transformations, and datasets.
+
+3. Image Processing Libraries
+
+    OpenCV
+
+        Used for image manipulation tasks like resizing, frame extraction, video-to-image conversion, and mask visualization.
+
+    PIL (Python Imaging Library) / Pillow
+
+        Used for loading and saving images, and performing basic preprocessing.
+
+4. Scientific Computing
+
+    NumPy
+
+        Used for handling matrix operations, mask manipulation, and mathematical computations.
+
+    SciPy / MATLAB
+
+        Used for handling and parsing .mat annotation files from the Singapore Maritime Dataset.
+
+5. Annotation and Visualization Tools
+
+    Matplotlib / Seaborn
+
+        Used for visualizing model outputs, segmentation masks, performance metrics, and training curves.
+
+    Labelme / CVAT (Optional)
+
+        Considered for any custom labeling or reviewing annotations.
+
+6. Pretrained Model Repositories
+
+    Ultralytics YOLOv5 GitHub Repo
+
+        Provided pre-trained weights and modular codebase for training, inference, and evaluation of the YOLOv5 model.
+
+    DETR (Facebook AI GitHub)
+
+        Used as a reference for implementing the Detection Transformer.
+
+7. Dataset Handling and Conversion
+
+    Scikit-learn
+
+        Used for train-validation split, and performance metric calculations like F1-score, precision, and recall.
+
+    Custom Python Scripts
+
+        Used for converting .mat files to COCO or CSV format.
+
+        Used to merge SAM2 segment masks with detection outputs.
+
+8. GPU and Acceleration
+
+    NVIDIA CUDA / cuDNN
+
+        Leveraged for GPU acceleration during training and inference.
+
+    Google Colab / Kaggle Notebooks
+
+        Used for prototyping and training models in GPU-enabled cloud environments.
+
+9. Version Control
+
+    Git and GitHub
+
+        Used for code versioning, collaboration, and experiment tracking.
+
+Conclusion
+
+By integrating these technologies, the project maintained a balance between flexibility, performance, and research reproducibility. The synergy between deep learning frameworks like PyTorch, tools like OpenCV, and annotation handling via custom scripts enabled an efficient workflow for developing and deploying maritime segmentation and detection models.
+
+
+Implementation
+
+The implementation phase of this project involved building a robust maritime perception pipeline that integrates semantic segmentation and object detection models for improved obstacle awareness in marine environments. The key focus was on designing a system that could accurately detect floating objects by isolating sea regions and eliminating false positives caused by complex backgrounds like land, reflections, and sun glitter.
+1. Data Preprocessing and Annotation Parsing
+
+    Frame Extraction:
+
+        Video sequences from the Singapore Maritime Dataset (SMD) were converted into individual RGB frames using OpenCV.
+
+    Annotation Conversion:
+
+        .mat files containing bounding box annotations were parsed and converted into COCO-style JSON format to train object detection models (YOLOv5 and DETR).
+
+    Segmentation Masks:
+
+        For the LaRS and MaSTr1478 datasets, segmentation masks were resized and normalized.
+
+        Semantic masks were categorized into three classes: Sky, Water, and Obstacle.
+
+2. Semantic Segmentation Models
+
+    WaSR-T Implementation:
+
+        WaSR-T was implemented using PyTorch, with a ResNet-101 encoder and a custom-designed Temporal Context Module (TCM) using 3D convolutions.
+
+        For each target frame, the previous 5 frames were stacked to generate spatiotemporal embeddings.
+
+        Skip connections and ASPP (Atrous Spatial Pyramid Pooling) were used in the decoder to refine segmentation results.
+
+    SAM2 Model:
+
+        The SAM2 (Segment Anything Model) was used to generate high-accuracy water masks for complex maritime scenes.
+
+        These masks were used to filter detection outputs and eliminate bounding boxes not overlapping with water.
+
+3. Object Detection Models
+
+    YOLOv5:
+
+        Trained on COCO-style SMD annotations.
+
+        Provided fast detection of floating objects like boats, debris, and buoys.
+
+        Post-processing was applied to keep only detections overlapping with sea region (via SAM2 masks) to reduce false positives.
+
+    DETR (Detection Transformer):
+
+        Implemented using the official PyTorch version from Facebook AI.
+
+        Trained to predict object classes and bounding boxes using transformer-based attention.
+
+        Served as a complementary model to YOLOv5, improving detection robustness in cluttered scenes.
+
+4. Integration Workflow
+
+The final pipeline integrates all components in the following order:
+
+    Input Video Frame ⟶
+
+    WaSR-T or SAM2 Segmentation ⟶
+
+    Sea Region Mask Extraction ⟶
+
+    YOLOv5 / DETR Detection ⟶
+
+    Mask-Based Filtering: Keep only detections within sea mask
+
+    Final Output: Display segmented frame with filtered bounding boxes
+
+5. Post-Processing and Output Generation
+
+    Bounding boxes overlapping significantly (IoU > threshold) with sea masks were retained.
+
+    Overlayed segmentation and detection outputs were visualized for evaluation.
+
+    Precision, Recall, and F1-score were computed to assess model performance.
+
+Conclusion
+
+The implementation successfully combines semantic segmentation and object detection in a modular, real-time-ready pipeline. The integration of temporal awareness (WaSR-T) and mask-guided filtering enhances robustness in complex maritime scenarios, demonstrating potential for real-world deployment in autonomous marine systems.
+
+Project Requirements and Specifications
+
+This section outlines the hardware and software environment required to develop, train, and test the segmentation and detection models used in this maritime perception project. Due to the computational demands of deep learning models—especially those involving temporal modules and large image sequences—a high-performance setup was necessary.
+1. Hardware Requirements
+Component	Specification
+GPU	NVIDIA RTX A1000 (24 GB VRAM)
+CPU	Intel Xeon / AMD Ryzen 7 or higher
+RAM	Minimum 32 GB DDR4
+Storage	At least 100 GB free SSD space for datasets and model outputs
+Display	High-resolution display for output visualization
+Power	Compatible high-wattage power supply for GPU computation
+
+    The NVIDIA RTX A1000 GPU with 24 GB VRAM was crucial for training large models like WaSR-T and DETR, especially when using batch sizes that include multiple temporal frames.
+
+    The large memory also helped accelerate inference and reduce training time significantly.
+
+2. Software Requirements
+Software	Version / Details
+Operating System	Ubuntu 20.04 / Windows 10 / Linux Kernel 5+
+Python	3.8 or higher
+PyTorch	1.13 or higher
+Torchvision	Compatible version with PyTorch
+CUDA Toolkit	CUDA 11.3 or higher
+cuDNN	v8 or above
+OpenCV	4.x
+Matplotlib / Seaborn	For visualization
+Jupyter / Colab / VS Code	For development and debugging
+Git	Version control
+
+    PyTorch with CUDA support was used to accelerate deep learning training and inference on GPU.
+
+    Jupyter notebooks or VS Code were used for experimentation, visualization, and debugging.
+
+3. Dataset Requirements
+Dataset	Description	Size (Approx.)
+Singapore Maritime Dataset (SMD)	Object detection dataset with .mat annotations and RGB video frames	~15–20 GB
+LaRS Dataset	Segmentation dataset with sky, land, sea masks	~1–2 GB
+MaSTr1325 / MaSTr1478	High-resolution segmented maritime frames with temporal context	~5–6 GB
+
+Large disk space was needed to store both original and preprocessed versions of these datasets (e.g., resized frames, masks, JSON annotations).
+
+
