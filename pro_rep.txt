@@ -1,0 +1,471 @@
+Introduction
+
+In the realm of naval surveillance, monitoring maritime environments plays a crucial role in ensuring coastal security and situational awareness. Traditionally, visual or electro-optical sensors are deployed to observe sea regions, enabling the detection of threats, intrusions, or anomalies. However, manual interpretation of such data—especially from vast amounts of video or imagery—is often labor-intensive, time-consuming, and susceptible to errors, particularly under challenging conditions like poor visibility or cluttered scenes.
+
+This project focuses on developing an intelligent, deep learning-based system for multi-class semantic segmentation of maritime scenes. The aim is to automatically segment and classify different regions such as land, sky, and sea from visual inputs. A key objective is to further isolate and detect floating objects like ships, boats, buoys, or debris within the segmented sea regions.
+
+By leveraging advanced segmentation techniques, the system not only helps in automating the monitoring process but also enhances the accuracy and reliability of naval surveillance. This automation reduces the cognitive load on human operators and supports faster, more consistent threat detection across varying environmental conditions.
+
+The project involves training a semantic segmentation model, creating an annotated dataset with relevant maritime classes, and building an inference pipeline capable of processing both images and video frames. The end result is a practical solution that can overlay segmentation masks and bounding boxes on live or recorded surveillance footage—providing clear, real-time insights for defense and maritime monitoring applications.
+
+Problem Statement
+
+Maritime surveillance is essential for safeguarding coastal areas, monitoring ship traffic, and detecting potential threats. However, the visual data collected from surveillance systems—typically in the form of images or video streams—is often complex and cluttered due to dynamic lighting, water reflections, and environmental factors like haze or waves. Manually analyzing this data to detect regions of interest (land, sky, sea) and identifying floating objects (like boats, ships, debris, and buoys) is both time-consuming and prone to human error.
+
+The primary challenge this project addresses is the automatic segmentation and detection of maritime scenes for enhanced situational awareness. This includes two major tasks:
+
+    Semantic Segmentation: Accurately separating land, sky, and sea regions in each frame to provide a meaningful spatial understanding of the environment.
+
+    Object Detection: Identifying and localizing floating objects specifically within the segmented sea regions.
+
+To tackle these tasks, this project employs a combination of state-of-the-art deep learning models:
+
+    For semantic segmentation, two models are explored:
+
+        WaRS (Water and Region Segmentation): A model tailored for maritime environments that helps in distinguishing between land, sky, and sea with high precision.
+
+        SAM2 (Segment Anything Model - version 2): A generalized segmentation model that offers strong performance across diverse visual inputs, further refined for maritime use in this project.
+
+    For object detection, two complementary approaches are used:
+
+        YOLO (You Only Look Once): A real-time object detection model known for its speed and efficiency in identifying objects in complex scenes.
+
+        Detection Transformer (DETR): A transformer-based model that offers high accuracy by modeling object relationships and spatial dependencies, making it suitable for detecting small or partially occluded objects in sea regions.
+
+By integrating these models, the project aims to create a robust pipeline capable of real-time segmentation and detection, reducing human effort while increasing the accuracy and efficiency of maritime surveillance systems.
+
+
+WaRS Model (Water and Region Segmentation)
+
+The WaRS (Water and Region Segmentation) model is a deep learning architecture specifically designed to perform semantic segmentation in maritime environments. It focuses on accurately separating key regions such as sea (water), land, and sky, which are fundamental for applications like naval surveillance, search and rescue, and environmental monitoring.
+
+Traditional segmentation models often struggle with maritime imagery due to unique challenges like wave patterns, sunlight reflections, object occlusion, and the highly dynamic nature of water surfaces. The WaRS model addresses these limitations through a tailored network architecture and training strategy suited for marine scenes.
+Key Features and Architecture:
+
+    Encoder-Decoder Structure:
+    WaRS follows the popular encoder-decoder paradigm similar to U-Net or DeepLab variants. The encoder extracts hierarchical features from the input image, capturing both low-level textures and high-level semantic information. The decoder then reconstructs the segmentation map by progressively upsampling and refining the features to the original resolution.
+
+    Multi-Scale Contextual Learning:
+    Maritime scenes contain objects and textures of varying sizes—from small buoys to large ships and vast sea backgrounds. WaRS incorporates multi-scale feature fusion layers, allowing the network to understand both global context and fine-grained details. This helps in improving boundary accuracy between land, sea, and sky.
+
+    Attention Mechanisms:
+    To further enhance its focus on relevant regions (especially dynamic water areas), the WaRS model integrates attention modules that help the network concentrate on spatial regions that are semantically significant while ignoring irrelevant background noise.
+
+    Custom Loss Functions:
+    The model is often trained using a combination of cross-entropy loss and boundary-aware losses to penalize misclassification at edges, which are common in maritime segmentation tasks. This improves the clarity of separation between land, sea, and sky regions.
+
+    Lightweight and Efficient:
+    Unlike very heavy segmentation models, WaRS is designed to be relatively lightweight, making it suitable for real-time or near real-time inference on embedded systems or naval platforms with limited compute resources.
+
+Performance in Maritime Scenes:
+
+WaRS performs robustly across varied maritime conditions such as:
+
+    Daytime and nighttime imagery
+
+    Rough and calm sea states
+
+    Scenes with partial occlusions or floating objects
+
+    Satellite and drone-based perspectives
+
+It has shown strong generalization on datasets involving naval surveillance, with high pixel-level accuracy and reliable region separation, especially in differentiating the sea region from other classes. This is particularly important because floating object detection (e.g., using YOLO or DETR) is only meaningful when restricted to the segmented sea area.
+Integration in This Project:
+
+In this project, WaRS was used as a core semantic segmentation module to:
+
+    Classify each pixel into one of the classes: Land, Sky, or Sea.
+
+    Create a reliable binary mask for the sea region, which is then passed as a constraint to object detection models (YOLO/DETR) to identify and localize floating objects only within the water region.
+
+    Generate clean visual overlays to assist operators in maritime monitoring tasks.
+
+By using WaRS, the system achieves better segmentation accuracy and region-specific detection, significantly improving the relevance and interpretability of the surveillance output.
+
+SAM2 Model (Segment Anything Model - Version 2)
+
+The Segment Anything Model (SAM), developed by Meta AI, represents a new direction in vision AI—designed to generalize across a wide range of segmentation tasks without needing task-specific fine-tuning. The SAM2 version builds upon the success of the original SAM model, introducing architectural improvements, better prompt handling, and higher accuracy across complex visual domains like maritime scenes.
+
+SAM2 is part of a broader vision to create a foundation model for segmentation, similar to how models like BERT or GPT serve as general-purpose foundations for natural language tasks.
+Purpose and Strength in Maritime Segmentation:
+
+In maritime surveillance, images are often challenging due to water reflections, dynamic waves, varying lighting, and partial occlusions. Traditional segmentation models require extensive annotated data and task-specific training. SAM2 bypasses this need by supporting promptable segmentation, meaning it can generate segmentation masks using only lightweight guidance such as points, boxes, or masks—making it highly adaptable even to unseen objects or noisy environments.
+Core Architecture and Components:
+
+SAM2 comprises three main components:
+
+    Image Encoder:
+
+        A Vision Transformer (ViT) pre-trained on a massive dataset, enabling the model to understand diverse visual concepts and generalize across domains.
+
+        In SAM2, the image encoder is enhanced for better spatial resolution and long-range dependency modeling, which is crucial for maritime scenes with wide, open areas like the sea or sky.
+
+    Prompt Encoder:
+
+        Accepts various prompts such as:
+
+            Points (positive or negative)
+
+            Bounding boxes
+
+            Predefined masks
+
+        These prompts help guide the model to focus on specific regions, like the sea, a ship, or a floating object.
+
+        In SAM2, the prompt encoder is optimized for faster inference and improved spatial alignment.
+
+    Mask Decoder:
+
+        Combines the image embeddings and the prompt embeddings to generate high-quality segmentation masks.
+
+        The mask decoder in SAM2 produces multiple candidate masks with confidence scores, enabling selection of the most accurate output.
+
+        It includes attention modules and multi-scale reasoning to enhance mask precision—especially helpful in cluttered maritime images.
+
+Key Features of SAM2:
+
+    Generalization to Unseen Objects:
+    SAM2 doesn’t require class-specific training. It can segment new object types based on user prompts, making it ideal for maritime applications where new floating objects or unknown debris may appear.
+
+    Promptable Segmentation:
+    Unlike traditional models that require full scene understanding, SAM2 can segment a specific region (like the sea) using a point or bounding box as input—making it more flexible in real-world surveillance systems.
+
+    Multi-Mask Output with Ranking:
+    For a single prompt, SAM2 can return multiple plausible segmentation masks and rank them based on confidence, helping reduce false positives in noisy scenes.
+
+    Scalability and Transferability:
+    Since it is trained on billions of masks across diverse images, SAM2 easily adapts to complex maritime visuals without additional retraining.
+
+Integration in This Project:
+
+In this project, SAM2 was used alongside the WaRS model for the segmentation of maritime scenes, specifically for:
+
+    Assisting in segmenting sea, sky, and land regions, especially when boundary conditions are unclear or occluded.
+
+    Generating refined masks for complex images where WaRS might underperform due to limited training examples.
+
+    Providing an interactive or automated way to segment floating objects based on user-defined points or bounding boxes, before passing the data to detection models like YOLO or DETR.
+
+Advantages Over Traditional Models in Maritime Use:
+Feature	Traditional Models	SAM2
+Needs Retraining	Yes	No
+Works with Prompts	No	Yes (points, boxes, masks)
+Object-Agnostic	No (needs classes)	Yes
+Supports Interactive Use	No	Yes
+Handles Complex Scenes	Moderate	High
+Conclusion:
+
+SAM2 brings unprecedented flexibility and robustness to the segmentation task. In the context of this maritime surveillance project, it complements the WaRS model by offering prompt-based adaptability, fine-grained segmentation, and generalization to unknown objects, significantly enhancing the system's overall performance and reliability.
+
+
+
+YOLOv5 (You Only Look Once – Version 5)
+
+YOLOv5 is one of the most widely adopted object detection models in the deep learning community, known for its speed, accuracy, and efficiency. It belongs to the YOLO (You Only Look Once) family of models, which revolutionized object detection by introducing a single-stage detection architecture capable of real-time performance.
+
+YOLOv5 was developed and maintained by Ultralytics, and unlike its predecessors (YOLOv1–v4), it is implemented in PyTorch, making it more accessible and easier to customize.
+Why YOLOv5 for Maritime Detection?
+
+In this project, YOLOv5 is used for detecting floating objects (such as ships, boats, debris, and buoys) within the segmented sea region. This task is challenging due to:
+
+    Variations in object size and shape
+
+    Occlusions and water reflections
+
+    Low-contrast or blurry imagery from naval sensors
+
+YOLOv5 was selected because it performs exceptionally well in detecting objects even in such challenging scenarios, without requiring large inference times.
+Key Features of YOLOv5:
+
+    Single-Stage Detector:
+
+        YOLOv5 divides the input image into a grid and directly predicts bounding boxes and class probabilities in one forward pass.
+
+        This makes it much faster than two-stage detectors like Faster R-CNN.
+
+    Backbone and Neck:
+
+        The backbone (CSP-Darknet) extracts features from the input image.
+
+        The neck (PANet/FPN) helps in aggregating multi-scale features, allowing the model to detect both small and large objects.
+
+    Head:
+
+        The head layer performs final object classification and bounding box regression using anchor boxes.
+
+        It outputs results at three different scales, which improves detection across object sizes—a key advantage when dealing with both small debris and large ships.
+
+    Lightweight and Efficient:
+
+        Comes in multiple sizes (YOLOv5s, YOLOv5m, YOLOv5l, YOLOv5x) that trade off between speed and accuracy.
+
+        The YOLOv5s version is very fast and suitable for edge devices, while YOLOv5x provides higher accuracy for complex scenes.
+
+    Auto Learning Bounding Boxes:
+
+        During training, YOLOv5 automatically adjusts anchor boxes to better fit the dataset, improving detection accuracy without manual tuning.
+
+YOLOv5 in This Project:
+
+In this maritime surveillance project, YOLOv5 is applied after the segmentation step (from WaRS or SAM2), specifically on the sea region, to:
+
+    Detect and localize floating objects such as:
+
+        Ships and boats
+
+        Buoys
+
+        Debris
+
+    Generate bounding boxes for each object with class labels and confidence scores
+
+    Support real-time or near real-time inference on image frames or video streams
+
+This two-step approach (segment first, then detect) ensures that detection is focused and accurate, as it avoids false positives in non-water regions.
+Advantages of YOLOv5 in Maritime Scenes:
+Criteria	Performance
+Speed	Real-time (FPS > 30 on GPU)
+Accuracy	High (especially with YOLOv5m/l/x)
+Small object detection	Good (due to multi-scale outputs)
+Model flexibility	High (easily switch model size)
+Ease of use	High (PyTorch-based, well-documented)
+Conclusion:
+
+YOLOv5 brings an ideal balance of speed, accuracy, and deployability, making it a perfect fit for naval surveillance tasks where fast and reliable detection of floating objects is critical. Combined with semantic segmentation models (WaRS or SAM2), YOLOv5 forms the detection backbone of a powerful multi-stage maritime monitoring system.
+
+Detection Transformer (DETR)
+
+The Detection Transformer (DETR) is a groundbreaking object detection model introduced by Facebook AI Research (FAIR), which combines the power of transformers—originally used in natural language processing—with convolutional visual feature extraction. DETR reformulates the traditional object detection pipeline as a direct set prediction problem, offering a cleaner, end-to-end approach to detecting objects in images.
+
+Unlike traditional object detectors like YOLO or Faster R-CNN that rely on anchor boxes, region proposals, or non-maximum suppression (NMS), DETR replaces these components with a transformer-based attention mechanism and bipartite matching.
+Why DETR for Maritime Object Detection?
+
+In maritime environments, object detection is particularly challenging due to:
+
+    Small and sparsely located objects (e.g., buoys, debris)
+
+    Cluttered and reflective sea surfaces
+
+    Occlusions and irregular shapes
+
+DETR excels in such cases because it models global relationships between objects and their surroundings using self-attention. This makes it particularly effective in identifying subtle or overlapping objects that may be missed by anchor-based detectors like YOLO.
+Architecture Overview:
+
+DETR is composed of the following main components:
+
+    Backbone (e.g., ResNet):
+
+        Extracts feature maps from the input image.
+
+        These features are then flattened and passed to the transformer.
+
+    Transformer Encoder-Decoder:
+
+        The encoder processes the visual features and captures global context.
+
+        The decoder takes in a fixed number of object queries (learnable embeddings) and generates predictions for objects present in the image.
+
+        Each query attends to the image and decides if it corresponds to an actual object or should remain blank (no-object class).
+
+    Prediction Heads:
+
+        For each object query, DETR directly outputs:
+
+            A bounding box (center x, center y, width, height)
+
+            A class label
+
+        These predictions are compared against ground truth using a Hungarian bipartite matching loss to ensure one-to-one correspondence between predictions and targets.
+
+Key Features of DETR:
+Feature	Description
+Anchor-Free Detection	No need for predefined anchor boxes or region proposals
+Global Context Understanding	Self-attention allows DETR to model relationships between objects and their background
+Set Prediction	Predicts a fixed-size set of objects with one-to-one matching
+Simplified Pipeline	End-to-end trainable without custom components like NMS or RPN
+DETR in This Project:
+
+In this maritime surveillance project, DETR is used alongside YOLOv5 to detect floating objects within the segmented sea region. Its role includes:
+
+    Accurately identifying and localizing boats, ships, or debris—even when they are small, partially submerged, or close together.
+
+    Offering more reliable detections in cases where overlapping objects confuse traditional models.
+
+    Serving as a complementary model to YOLOv5, especially for improving detection quality in difficult conditions.
+
+YOLOv5 vs. DETR: Complementary Roles
+Aspect	YOLOv5	DETR
+Detection Speed	Very fast (real-time)	Slower (but improving)
+Architecture Type	CNN-based (anchor-based)	Transformer-based (anchor-free)
+Small Object Handling	Good (multi-scale outputs)	Better with complex scenes
+Global Context	Limited	Strong (via self-attention)
+Training Complexity	Easier	Requires longer training time
+Conclusion:
+
+DETR brings transformer-level reasoning and global context awareness into the object detection domain, making it especially useful in complex maritime scenes where traditional CNN-based models may struggle. When combined with segmentation models (like WaRS or SAM2) and other detectors (like YOLOv5), DETR helps build a robust and intelligent surveillance system capable of handling real-world challenges at sea.
+
+Reducing False Positives Using SAM2 Water Mask Integration
+
+While YOLOv5 is a highly efficient and fast object detection model, it can sometimes produce false positives, especially in complex or cluttered maritime backgrounds. This is particularly common in images with overlapping textures (like waves and reflections), similar-looking structures (like shorelines or boats near the horizon), or occluded objects.
+
+In such scenarios, YOLOv5 may generate bounding boxes for objects in irrelevant areas—such as on land, in the sky, or on reflective water surfaces where no real object exists. These false detections can significantly reduce the reliability of the system, especially in a real-world surveillance context where accuracy is critical.
+
+To overcome this, we introduce a post-processing filter based on semantic segmentation masks generated by the SAM2 model.
+Integration Strategy: YOLOv5 + SAM2
+
+The proposed approach combines the strengths of both models:
+
+    SAM2 provides a high-quality segmentation mask that separates sea (water) regions from land and sky.
+
+    YOLOv5 detects all possible objects in the scene, regardless of their location.
+
+After detection, a geometric filtering step is applied where:
+
+    Only those bounding boxes predicted by YOLOv5 that intersect or overlap significantly with the sea region in the SAM2-generated segmentation mask are retained.
+
+All other detections—especially those located on land or in the sky—are discarded as false positives.
+Advantages of This Fusion Approach:
+
+    ✅ Reduces noise from background structures like docks, rocks, or land vehicles.
+
+    ✅ Ensures object detection is context-aware—only objects truly floating on water are considered.
+
+    ✅ Improves overall precision, particularly in complex maritime scenes.
+
+    ✅ Makes the pipeline more reliable for downstream tasks such as threat detection or object tracking.
+
+Illustrative Example:
+
+Imagine a surveillance image where a docked ship and some rocks appear on the coastline. YOLOv5 may detect them all as floating objects. However, when applying the SAM2 segmentation mask, only those bounding boxes touching the sea mask will be retained, eliminating detections that fall on land or other irrelevant regions.
+Conclusion:
+
+This mask-based filtering mechanism introduces a simple yet effective constraint that aligns detection with environmental context. By integrating YOLOv5 with SAM2’s segmentation output, the system achieves higher precision and more meaningful object detections in maritime environments.
+
+Dataset Description: Singapore Maritime Dataset (SMD)
+
+The Singapore Maritime Dataset (SMD) is a publicly available dataset curated specifically for research in maritime object detection and scene understanding. Developed by the Centre for Remote Imaging, Sensing and Processing (CRISP) at the National University of Singapore, the SMD serves as a valuable benchmark for evaluating computer vision models in real-world naval environments.
+
+This dataset is widely used in projects related to autonomous vessel navigation, maritime surveillance, and floating object detection due to its rich variety of scenes and annotated object classes.
+Key Features of the SMD:
+
+    Realistic Maritime Scenarios:
+
+        The dataset consists of videos and image frames captured from both visible (VIS) and infrared (IR) sensors mounted on surveillance systems or autonomous vessels.
+
+        Scenes include ports, open sea, coastal waters, and cluttered shorelines, reflecting real operational conditions.
+
+    Variety of Object Classes:
+
+        The SMD covers multiple floating object types such as:
+
+            Ships
+
+            Boats
+
+            Buoys
+
+            Debris
+
+            Other unknown objects
+
+        Each object is annotated with a bounding box, and sometimes includes motion or distance labels (depending on the subset used).
+
+    Video and Image Annotations:
+
+        The dataset provides frame-wise annotations, often stored in MATLAB (.mat) format, containing structured fields like:
+
+            Bounding box coordinates (BB)
+
+            Object type
+
+            Motion state
+
+            Distance category
+
+    Challenging Environmental Conditions:
+
+        Includes diverse lighting (day/night), weather conditions, and occlusion scenarios, making it ideal for testing model robustness.
+
+        Also includes cluttered backgrounds, reflections, and small, low-contrast objects—perfect for stress-testing detection algorithms like YOLO and DETR.
+
+    Structured Folders:
+
+        Typically split into training and testing subsets with organized folders:
+
+            /image/ or /frames/ folder containing extracted RGB images
+
+            /groundtruth/ or /mat/ folder containing object annotations
+
+Usage in This Project:
+
+In this project, the RGB frames extracted from the SMD's video sequences were used as input for both:
+
+    Semantic segmentation using WaRS and SAM2, and
+
+    Object detection using YOLOv5 and DETR.
+
+The ground truth annotations provided in .mat format were parsed and converted to standard formats (e.g., COCO or CSV) for model training and evaluation. The dataset's real-world variability helped train models that generalize well to various maritime environments.
+Conclusion:
+
+The Singapore Maritime Dataset provides a comprehensive and realistic platform for training and validating vision-based maritime systems. Its complexity and high-quality annotations make it a benchmark choice for researchers working in naval surveillance, autonomous maritime navigation, and object detection in oceanic environments.
+
+
+Dataset Description: LaRS Dataset (Light-weight Aerial Maritime Surveillance)
+
+The LaRS (Light-weight Aerial Maritime Surveillance) dataset is a publicly available dataset specifically designed for semantic segmentation in maritime environments. It is curated to support the development and evaluation of deep learning models for scene understanding in the context of aerial and maritime surveillance.
+
+LaRS focuses on classifying key visual components in maritime images such as sky, land, and water (sea)—which are fundamental for high-level tasks like object detection, tracking, and anomaly detection in naval or coastal monitoring systems.
+Key Features of the LaRS Dataset:
+
+    Semantic Segmentation Labels:
+
+        Each image in the dataset is paired with a pixel-level semantic mask, where each pixel is annotated as:
+
+            Sky
+
+            Land
+
+            Water (Sea)
+
+        This labeling enables training and evaluation of multi-class segmentation models such as U-Net, WaRS, or SAM2.
+
+    Real-World Maritime Scenes:
+
+        Images are collected from aerial surveillance platforms, providing a top-down or oblique view of coastal regions, harbors, and open sea.
+
+        The dataset reflects operational environments with variable lighting, complex shorelines, and distant horizons.
+
+    Diverse Visual Conditions:
+
+        Includes scenes with:
+
+            Clear sky and cloudy conditions
+
+            Calm and rough sea surfaces
+
+            Natural and man-made land features like docks, ports, and coastlines
+
+    Compact and Lightweight:
+
+        LaRS is intentionally designed to be lightweight (small in size) for rapid prototyping and experimentation.
+
+        It is particularly useful for academic research, benchmarking, or testing smaller models on maritime segmentation tasks.
+
+Usage in This Project:
+
+In this project, the LaRS dataset was used to train and evaluate semantic segmentation models, particularly:
+
+    WaRS: The dataset serves as a training source to teach the model how to accurately distinguish between sea, sky, and land regions.
+
+    SAM2: The annotated masks were used to benchmark the model’s general segmentation capabilities in maritime contexts.
+
+The dataset’s high-quality pixel-level annotations and real-world complexity made it a strong foundation for developing the segmentation module of the maritime monitoring pipeline.
+Advantages of LaRS Dataset:
+Attribute	Description
+Pixel-level Accuracy	Provides precise labels for sky, sea, and land
+Lightweight	Easy to download, process, and experiment with
+High Relevance	Specifically tailored for maritime segmentation
+Complementary	Works well alongside detection datasets like SMD
+Conclusion:
+
+The LaRS dataset plays a key role in enabling robust semantic segmentation in maritime surveillance systems. By offering high-quality annotations in real-world aerial scenes, it allows models to learn meaningful class boundaries—especially critical for sea region isolation, which directly supports downstream tasks like object detection using YOLOv5 or DETR. Its simplicity and effectiveness make it an ideal companion to more complex datasets like the Singapore Maritime Dataset (SMD).
