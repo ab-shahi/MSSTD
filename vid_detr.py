@@ -98,3 +98,150 @@ output_fps = 5  # 5 FPS output
 out = cv2.VideoWriter(output_path, fourcc, output_fps, (width, height))
 
     # run inference and display results
+
+
+# sam2
+
+import cv2
+import torch
+import numpy as np
+from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+
+# Load SAM model
+sam_checkpoint = "sam_vit_h_4b8939.pth"
+model_type = "vit_h"
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+sam.to(device=device)
+
+mask_generator = SamAutomaticMaskGenerator(sam)
+
+# Open video file
+input_path = "input_video.mp4"
+cap = cv2.VideoCapture(input_path)
+
+# Get video properties
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+input_fps = cap.get(cv2.CAP_PROP_FPS)
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+# Output video
+output_fps = 5  # You can change this
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter("output_sam_video.mp4", fourcc, output_fps, (width, height))
+
+# Frame skip for FPS control
+frame_skip = int(input_fps // output_fps) if output_fps < input_fps else 1
+frame_idx = 0
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    if frame_idx % frame_skip != 0:
+        frame_idx += 1
+        continue
+
+    # Convert frame to RGB
+    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # Generate masks
+    masks = mask_generator.generate(image_rgb)
+
+    # Overlay masks on the frame
+    for mask in masks:
+        segmentation = mask['segmentation']
+        color_mask = np.random.randint(0, 255, (1, 3), dtype=np.uint8)
+        frame[segmentation] = cv2.addWeighted(frame[segmentation], 0.5, color_mask, 0.5, 0)
+
+    # Write frame to output
+    out.write(frame)
+    frame_idx += 1
+
+# Release everything
+cap.release()
+out.release()
+cv2.destroyAllWindows()
+
+
+import cv2
+import numpy as np
+import torch
+from segment_anything import sam_model_registry, SamPredictor
+
+# Load SAM model
+sam_checkpoint = "sam_vit_h_4b8939.pth"
+model_type = "vit_h"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+sam.to(device=device)
+
+predictor = SamPredictor(sam)
+
+# Load video
+input_path = "input_video.mp4"
+cap = cv2.VideoCapture(input_path)
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter("output_segmented_video.mp4", fourcc, fps, (width, height))
+
+# Read the first frame
+ret, first_frame = cap.read()
+if not ret:
+    print("Failed to read video.")
+    exit()
+
+# Let user draw a bounding box on the first frame
+bbox = cv2.selectROI("Select Object", first_frame, fromCenter=False, showCrosshair=True)
+cv2.destroyWindow("Select Object")
+
+# Convert BGR to RGB and set image
+image_rgb = cv2.cvtColor(first_frame, cv2.COLOR_BGR2RGB)
+predictor.set_image(image_rgb)
+
+# SAM expects bbox as [x0, y0, x1, y1]
+input_box = np.array([bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]])
+
+# Predict mask
+masks, scores, logits = predictor.predict(box=input_box[None, :], multimask_output=True)
+
+# Choose the highest scoring mask
+mask = masks[np.argmax(scores)]
+
+# Apply mask to the first frame
+colored_mask = np.zeros_like(first_frame)
+colored_mask[mask] = [0, 255, 0]  # green
+blended = cv2.addWeighted(first_frame, 0.7, colored_mask, 0.3, 0)
+
+# Write the first frame with mask
+out.write(blended)
+
+# Process the rest of the video
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Apply same box to all frames (optional: update box dynamically)
+    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    predictor.set_image(image_rgb)
+    masks, scores, logits = predictor.predict(box=input_box[None, :], multimask_output=True)
+    mask = masks[np.argmax(scores)]
+
+    colored_mask = np.zeros_like(frame)
+    colored_mask[mask] = [0, 255, 0]
+    blended = cv2.addWeighted(frame, 0.7, colored_mask, 0.3, 0)
+
+    out.write(blended)
+
+# Release everything
+cap.release()
+out.release()
+cv2.destroyAllWindows()
+
