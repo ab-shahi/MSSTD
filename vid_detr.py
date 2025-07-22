@@ -93,4 +93,8 @@ while True:
     if frame_count % frame_skip != 0:
         continue  # skip this frame
 
+
+output_fps = 5  # 5 FPS output
+out = cv2.VideoWriter(output_path, fourcc, output_fps, (width, height))
+
     # run inference and display results
